@@ -10,7 +10,7 @@ pub fn setup(_tempdir: PathBuf) -> TestSetup {
     let tempfile = NamedTempFile::new().unwrap();
 
     // Setup sandbox exceptions.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::Read(tempfile.path().into())).unwrap();
 
     tempfile.close().unwrap();

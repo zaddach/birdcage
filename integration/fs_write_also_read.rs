@@ -19,7 +19,7 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
     File::create(&path).unwrap();
 
     // Activate our sandbox.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::WriteAndRead(path.clone())).unwrap();
 
     // Serialize test data.

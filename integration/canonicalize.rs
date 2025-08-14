@@ -6,7 +6,7 @@ use birdcage::{Birdcage, Exception, Sandbox};
 use crate::TestSetup;
 
 pub fn setup(_tempdir: PathBuf) -> TestSetup {
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::Read("./".into())).unwrap();
 
     TestSetup { sandbox, data: String::new() }

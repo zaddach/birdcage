@@ -10,7 +10,7 @@ pub fn setup(_tempdir: PathBuf) -> TestSetup {
     env::set_var("PUBLIC", "GOOD");
 
     // Activate our sandbox.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::FullEnvironment).unwrap();
 
     TestSetup { sandbox, data: String::new() }

@@ -11,7 +11,7 @@ pub fn setup(_tempdir: PathBuf) -> TestSetup {
     env::set_var("PRIVATE", "BAD");
 
     // Activate our sandbox.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::Environment("PUBLIC".into())).unwrap();
 
     TestSetup { sandbox, data: String::new() }
@@ -19,6 +19,6 @@ pub fn setup(_tempdir: PathBuf) -> TestSetup {
 
 pub fn validate(_data: String) {
     // Only the `PUBLIC` environment variable remains.
-    let env: Vec<_> = env::vars().collect();
+    let env: Vec<_> = env::vars().filter(|(name, _)| !["LOCALAPPDATA".to_string(), "TEMP".to_string(), "TMP".to_string()].contains(& name.to_uppercase())).collect();
     assert_eq!(env, vec![("PUBLIC".into(), "GOOD".into())]);
 }

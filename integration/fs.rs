@@ -22,7 +22,7 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
     fs::write(&public_path, FILE_CONTENT.as_bytes()).unwrap();
 
     // Setup sandbox exceptions.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::Read(public_path.clone())).unwrap();
 
     // Serialize test data.

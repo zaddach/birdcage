@@ -1,3 +1,5 @@
+#![feature(windows_process_extensions_raw_attribute)]
+
 //! Birdcage sandbox.
 //!
 //! This crate provides a cross-platform API for an embedded sandbox for macOS
@@ -10,19 +12,33 @@
 //!
 //! use birdcage::process::Command;
 //! use birdcage::{Birdcage, Exception, Sandbox};
+//! 
+//! #[cfg(windows)]
+//! const TEST_PROGRAM: &str = "C:\\Windows\\System32\\cmd.exe";
+//! #[cfg(windows)]
+//! const TEST_PROGRAM_ARGS: &[&str] = &["/C", "type", "./Cargo.toml"];
+//! #[cfg(windows)]
+//! const ALLOWED_SYSTEM_DIRS: &[&str] = &["C:\\Windows\\System32"];
+//! #[cfg(not(windows))]
+//! const TEST_PROGRAM: &str = "/bin/cat";
+//! #[cfg(not(windows))]
+//! const TEST_PROGRAM_ARGS: &[&str] = &["./Cargo.toml"];
+//! #[cfg(not(windows))]
+//! const ALLOWED_SYSTEM_DIRS: &[&str] = &["/lib64", "/lib"];
 //!
 //! // Reads without sandbox work.
 //! fs::read_to_string("./Cargo.toml").unwrap();
 //!
 //! // Allow access to our test executable.
 //! let mut sandbox = Birdcage::new();
-//! sandbox.add_exception(Exception::ExecuteAndRead("/bin/cat".into())).unwrap();
-//! let _ = sandbox.add_exception(Exception::ExecuteAndRead("/lib64".into()));
-//! let _ = sandbox.add_exception(Exception::ExecuteAndRead("/lib".into()));
+//! sandbox.add_exception(Exception::ExecuteAndRead(TEST_PROGRAM.into())).unwrap();
+//! for allowed_system_dir in ALLOWED_SYSTEM_DIRS {
+//!     let _ = sandbox.add_exception(Exception::ExecuteAndRead(allowed_system_dir.into()));
+//! }
 //!
 //! // Initialize the sandbox; by default everything is prohibited.
-//! let mut command = Command::new("/bin/cat");
-//! command.arg("./Cargo.toml");
+//! let mut command = Command::new(TEST_PROGRAM);
+//! command.args(TEST_PROGRAM_ARGS);
 //! let mut child = sandbox.spawn(command).unwrap();
 //!
 //! // Reads with sandbox should fail.
@@ -38,6 +54,8 @@ use crate::error::Result;
 use crate::linux::LinuxSandbox;
 #[cfg(target_os = "macos")]
 use crate::macos::MacSandbox;
+#[cfg(target_os = "windows")]
+use crate::windows::WindowsSandbox;
 use crate::process::{Child, Command};
 
 pub mod error;
@@ -45,6 +63,8 @@ pub mod error;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "windows")]
+mod windows;
 pub mod process;
 
 /// Default platform sandbox.
@@ -61,9 +81,16 @@ pub type Birdcage = LinuxSandbox;
 #[cfg(target_os = "macos")]
 pub type Birdcage = MacSandbox;
 
+/// Default platform sandbox.
+///
+/// This type will automatically pick the default sandbox for each available
+/// platform.
+#[cfg(target_os = "windows")]
+pub type Birdcage = WindowsSandbox;
+
 pub trait Sandbox: Sized {
     /// Setup the sandboxing environment.
-    fn new() -> Self;
+    fn try_new() -> Result<Self>;
 
     /// Add a new exception to the sandbox.
     ///

@@ -20,7 +20,7 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
     fs::write(&tempfile, FILE_CONTENT.as_bytes()).unwrap();
 
     // Setup sandbox, allowing read/write to dir, but only read for the file.
-    let mut sandbox = Birdcage::new();
+    let mut sandbox = Birdcage::try_new().unwrap();
     sandbox.add_exception(Exception::WriteAndRead(tempdir.clone())).unwrap();
     sandbox.add_exception(Exception::Read(tempfile.clone())).unwrap();
 

@@ -15,6 +15,7 @@ struct TestData {
 pub fn setup(tempdir: PathBuf) -> TestSetup {
     // Create symlinked executable dir.
     let symlink_dir = tempdir.join("bin");
+
     unixfs::symlink("/usr/bin", &symlink_dir).unwrap();
 
     let mut sandbox = Birdcage::new();

@@ -9,17 +9,28 @@ test_mods! {
     mod consistent_id_mappings;
     mod delete_before_lockdown;
     mod env;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod exec;
+    #[cfg(target_os = "windows")]
+    mod exec_windows;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod exec_symlinked_dir;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod exec_symlinked_dirs_exec;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod exec_symlinked_file;
     mod fs;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod fs_broken_symlink;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod fs_null;
     mod fs_readonly;
     mod fs_restrict_child;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod fs_symlink;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod fs_symlink_dir;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     mod fs_symlink_dir_separate_perms;
     mod fs_write_also_read;
     mod full_env;
@@ -40,6 +51,18 @@ pub struct TestSetup {
 }
 
 fn main() {
+    // Configure logging
+    env_logger::init();
+
+    // On Windows, we don't have reliable programs like /bin/true for testing.
+    // So we're emulating those programs here with magic arguments to the test harness.
+    if std::env::args().any(|arg| arg == "emulate_bin_true") {
+        std::process::exit(0);
+    }
+    else if std::env::args().any(|arg| arg == "emulate_bin_false") {
+        std::process::exit(1);
+    }
+
     let mut args = std::env::args().skip(1);
 
     // Get test name or spawn all the tests.
@@ -145,6 +168,7 @@ fn run_setup(test_name: &str, tempdir: String, setup: &fn(PathBuf) -> TestSetup)
     // Reexecute test with sandbox enabled.
     let mut command = birdcage::process::Command::new(current_exe);
     command.args([test_name, test_setup.data.as_str()]);
+    command.env("RUST_BACKTRACE", "1");
     let child = test_setup.sandbox.spawn(command).unwrap();
 
     // Validate test results.

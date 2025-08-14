@@ -1,4 +1,5 @@
 use std::io::Write;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::os::unix::process::ExitStatusExt;
 
 use birdcage::process::{Command, Stdio};

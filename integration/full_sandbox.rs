@@ -11,6 +11,7 @@ use crate::TestSetup;
 #[derive(Serialize, Deserialize)]
 struct TestData {
     path: PathBuf,
+    executable: PathBuf,
 }
 
 pub fn setup(tempdir: PathBuf) -> TestSetup {
@@ -18,6 +19,7 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
 
     // Create testfile.
     let path = tempdir.join("full_sandbox");
+    let executable = tempdir.join("harness");
 
     // Ensure non-sandboxed write works.
     fs::write(&path, FILE_CONTENT.as_bytes()).unwrap();
@@ -31,8 +33,14 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
     assert!(stream.is_ok());
     drop(stream);
 
+    // Copy harness as test program
+    std::fs::copy(
+        std::env::current_exe().unwrap(),
+        &executable,
+    ).unwrap();
+
     // Ensure non-sandboxed execution works.
-    let cmd = Command::new("/usr/bin/true").status();
+    let cmd = Command::new(& executable).arg("emulate_bin_true").status();
     assert!(cmd.is_ok());
 
     // Ensure non-sandboxed env access works.
@@ -40,10 +48,10 @@ pub fn setup(tempdir: PathBuf) -> TestSetup {
     assert_eq!(env::var("TEST"), Ok("value".into()));
 
     // Setup birdcage sandbox.
-    let sandbox = Birdcage::new();
+    let sandbox = Birdcage::try_new().unwrap();
 
     // Serialize test data.
-    let data = TestData { path };
+    let data = TestData { path, executable };
     let data = serde_json::to_string(&data).unwrap();
 
     TestSetup { sandbox, data }
@@ -67,7 +75,7 @@ pub fn validate(data: String) {
     drop(stream);
 
     // Ensure sandboxed execution is blocked.
-    let cmd = Command::new("/usr/bin/true").status();
+    let cmd = Command::new(data.executable).arg("emulate_bin_true").status();
     assert!(cmd.is_err());
 
     // Ensure sandboxed env access is blocked.
